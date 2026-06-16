@@ -1,0 +1,58 @@
+name: 'SecuCloud - Azure Deployment & Security'
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+# Définition des variables d'environnement pour l'authentification Azure
+env:
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+
+jobs:
+  terraform:
+    name: 'Terraform & Security Check'
+    runs-on: ubuntu-latest
+    environment: production
+
+    # Spécifie que toutes les commandes doivent s'exécuter dans le dossier src/
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./src
+
+    steps:
+    - name: Checkout du repository
+      uses: actions/checkout@v4
+
+    - name: Configuration de Terraform
+      uses: hashicorp/setup-terraform@v3
+
+    - name: Terraform Init
+      run: terraform init
+
+    - name: Terraform Format
+      run: terraform fmt -check
+
+    # CHECK DE SÉCURITÉ (tfsec) 
+    - name: Analyse de sécurité avec tfsec
+      uses: aquasecurity/tfsec-action@v1.0.3
+      with:
+        working_directory: ./src
+    
+        # soft_fail: true 
+
+    - name: Terraform Plan
+      run: terraform plan -input=false
+
+    # Le déploiement ne s'effectue que si l'on pousse sur la branche main
+    - name: Terraform Apply
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      run: terraform apply -auto-approve -input=false
