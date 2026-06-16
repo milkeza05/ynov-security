@@ -10,7 +10,7 @@ Repository pour la création d'un pipeline de déploiement Azure avec check de s
 
 ├── src/
 
-│   └── main.tf                 code IaC (Terraform)
+│   └── main.tf                 # code IaC (Terraform)
 
 │   └── variables.tf
 
